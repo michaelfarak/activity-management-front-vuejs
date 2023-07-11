@@ -1,5 +1,9 @@
 <template>
-  <div v-if="!hidden" class="activity">
+  <div
+    v-if="!hidden"
+    class="activity"
+    :class="{ 'first-activity': isFirstActivity, 'last-activity': isLastActivity }"
+  >
     <div class="left-side">
       <div class="icon-container">
         <img :src="`${publicPath}${parsedIconPath}`" class="icon" alt="Icon" />
@@ -13,15 +17,15 @@
     <div class="right-side">
       <div v-if="activity.score" class="score">
         <span>Score </span>
-        <span style="font-weight: bolder;">
-          {{ activity.score }}/{{ activity.possible_score }}</span
-        >
+        <span style="font-weight: 900;"> {{ activity.score }}/{{ activity.possible_score }}</span>
       </div>
       <button v-if="isViewable" class="view-button" @click="openModal">
-        <i class="fa fa-eye"></i>
+        <font-awesome-icon :icon="['fas', 'eye']" />
         View work
       </button>
-      <button @click="toggleHidden" class="hide-button"><i class="fa fa-trash"></i></button>
+      <button @click="toggleHidden" class="hide-button">
+        <font-awesome-icon :icon="['fas', 'trash']" />
+      </button>
       <div v-if="showModal" class="modal-overlay">
         <div class="modal">
           <div class="modal-content">
@@ -38,7 +42,7 @@
             <p class="comment">{{ activity.comment }}</p>
             <div v-if="activity.score" class="score">
               <span>Score </span>
-              <span style="font-weight: bolder;"
+              <span style="font-weight: 900;"
                 >{{ activity.score }}/{{ activity.possible_score }}</span
               >
             </div>
@@ -53,6 +57,8 @@
 export default {
   props: {
     activity: Object,
+    isFirstActivity: Boolean,
+    isLastActivity: Boolean,
     activityName: String,
     isViewable: Boolean,
     hidden: Boolean
@@ -111,10 +117,41 @@ export default {
 .activity {
   display: flex;
   align-items: center;
-  margin-bottom: 10px;
-  border: 1px solid black;
+  margin-bottom: 14px;
+  border: 1px solid #cccccc;
+  border-radius: 5px;
   justify-content: space-between;
   padding: 10px;
+}
+
+.first-activity::before {
+  content: "";
+  position: absolute;
+  left: 60px;
+  -webkit-transform: translateX(-50%);
+  transform: translateX(-50%);
+  height: 14px;
+  width: 1px;
+  background-color: #cccccc;
+  top: -14px;
+}
+.activity::after {
+  content: "";
+  position: absolute;
+  left: 60px;
+  -webkit-transform: translateX(-50%);
+  transform: translateX(-50%);
+  height: 14px;
+  width: 1px;
+  background-color: #cccccc;
+}
+
+.activity::after {
+  bottom: -14px;
+}
+
+.last-activity::after {
+  display: none;
 }
 
 .left-side {
@@ -128,6 +165,7 @@ export default {
 
   .view-button,
   .hide-button {
+    margin: 0 10px;
     color: #028083;
     font-weight: bold;
     border: none;
@@ -149,7 +187,7 @@ export default {
 }
 
 .topic-name {
-  font-weight: bold;
+  font-weight: 900;
 }
 .date {
   font-size: smaller;
@@ -160,7 +198,7 @@ export default {
   align-items: center;
   width: 50px;
   height: 50px;
-  background-color: deepskyblue;
+  background-color: #05cbcb;
   border-radius: 50%;
   position: relative;
 

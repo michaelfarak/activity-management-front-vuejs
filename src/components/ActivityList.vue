@@ -1,10 +1,38 @@
 <template>
-  <div>
-    <h2>Activity List {{ versionName }}</h2>
+  <div class="main-container">
+    <h1 class="main-title">Activities view {{ versionName }}</h1>
 
+    <div class="autocomplete-container">
+      <h1>Timeline</h1>
+      <md-field>
+        <md-autocomplete
+          md-input-placeholder="Search timeline"
+          v-model="searchTerm"
+          :md-options="activityNames"
+          :md-search-text.sync="searchTerm"
+          :md-loading="isLoading"
+          md-min-length="1"
+          md-select-on-keypress
+          md-remote-delay="300"
+          @md-selected="onSelectActivity"
+        >
+          <div class="magnifying-glass-container">
+            <font-awesome-icon :icon="['fas', 'magnifying-glass']" />
+          </div>
+          <template slot="md-autocomplete-item" slot-scope="{ item }">
+            <span>{{ item }}</span>
+          </template>
+        </md-autocomplete>
+      </md-field>
+    </div>
+    <div class="filter-by">Filter by:</div>
     <div class="filters">
       <button @click="toggleFilter(null)" :class="{ active: isFilterActive(null) }">
-        <i v-show="isFilterActive(null)" class="fa fa-check-circle"></i>
+        <font-awesome-icon
+          v-if="isFilterActive(null)"
+          :icon="['fas', 'circle-check']"
+          style="color: #028083;"
+        />
         All works
       </button>
       <button
@@ -13,40 +41,30 @@
         @click="toggleFilter(resourceType)"
         :class="{ active: isFilterActive(resourceType) }"
       >
-        <i v-show="isFilterActive(resourceType)" class="fa fa-check-circle"></i>
+        <font-awesome-icon
+          v-if="isFilterActive(resourceType)"
+          :icon="['fas', 'circle-check']"
+          style="color: #028083;"
+        />
+
         {{ parseToReadableLabel(resourceType) }}
       </button>
     </div>
-    <div class="autocomplete-container">
-      <md-field>
-        <label>Search Timeline</label>
-        <md-autocomplete
-          v-model="searchTerm"
-          :md-options="activityNames"
-          :md-search-text.sync="searchTerm"
-          :md-loading="isLoading"
-          md-min-length="1"
-          md-select-on-keypress
-          md-remote-delay="300"
-          md-clear-on-select
-          @md-selected="onSelectActivity"
-        >
-          <template slot="md-autocomplete-item" slot-scope="{ item }">
-            <span>{{ item }}</span>
-          </template>
-        </md-autocomplete>
-      </md-field>
-    </div>
 
-    <div v-for="(group, month) in groupedActivities" :key="month">
+    <div
+      class="activities-group"
+      v-for="(group, month, groupIndex) in groupedActivities"
+      :key="month"
+    >
       <div class="month">
         {{ month }}
-        <span class="vertical-line"></span>
       </div>
-      <ul style="list-style-type: none;">
-        <li v-for="activity in group" :key="activity.id">
+      <ul class="activities-list">
+        <li v-for="(activity, index) in group" :key="activity.id" class="activity-item">
           <Activity
             :activity="activity"
+            :isFirstActivity="isFirstActivity(index)"
+            :isLastActivity="isLastActivity(index, group, groupIndex)"
             :activityName="readableActivityName(activity)"
             :isViewable="isViewable(activity)"
             :hidden="isActivityHidden(activity.id)"
@@ -54,9 +72,11 @@
           />
         </li>
       </ul>
+      <span class="vertical-line-group"></span>
     </div>
+    <div v-if="filteredActivities.length === 0">NO ACTIVITY FOUND</div>
     <button v-if="shouldShowLoadMoreButton" @click="loadMore" class="load-more-button">
-      <i class="fa fa-chevron-down"></i>
+      <font-awesome-icon :icon="['fas', 'chevron-down']" />
       Load More
     </button>
   </div>
@@ -128,18 +148,19 @@ export default {
     },
 
     groupedActivities() {
-      return this.filteredActivities.reduce((result, activity) => {
+      let groupedActivities = this.filteredActivities.reduce((result, activity) => {
         const date = new Date(activity.d_created * 1000);
-        const monthYear = `${date.toLocaleString("default", {
+        const month = `${date.toLocaleString("default", {
           month: "long"
-        })} ${date.getFullYear()}`;
+        })}`;
 
-        if (!result[monthYear]) {
-          result[monthYear] = [];
+        if (!result[month]) {
+          result[month] = [];
         }
-        result[monthYear].push(activity);
+        result[month].push(activity);
         return result;
       }, {});
+      return groupedActivities;
     },
 
     readableActivityName() {
@@ -246,60 +267,132 @@ export default {
       if (storedHiddenActivities) {
         this.hiddenActivities = JSON.parse(storedHiddenActivities);
       }
+    },
+
+    isFirstActivity(index) {
+      return index === 0;
+    },
+
+    isLastActivity(index, group, groupIndex) {
+      return (
+        index === group.length - 1 && groupIndex === Object.keys(this.groupedActivities).length - 1
+      );
     }
   }
 };
 </script>
 
 <style>
-.filters {
-  margin-bottom: 1rem;
+h1 {
+  text-align: left;
 }
+.main-container {
+  width: 90vw;
+  margin-left: auto;
+  margin-right: auto;
 
-.filters button {
-  color: #028083;
-  background: none;
-  margin-right: 0.5rem;
-  border: 2px solid #028083;
-  padding: 5px;
-  cursor: pointer;
-}
+  .main-title {
+    margin-bottom: 40px;
+    font-weight: 900;
+  }
 
-.filters .active {
-  background-color: lightblue;
-}
+  .filter-by {
+    text-align: left;
+    margin-bottom: 10px;
+  }
 
-.load-more-button {
-  color: #028083;
-  font-weight: bold;
-  border: none;
-  background: none;
-  cursor: pointer;
-}
-.autocomplete-container {
-  width: 300px;
+  .filters {
+    text-align: left;
+    margin-bottom: 1rem;
+  }
+
+  .filters button {
+    color: #4aa3a4;
+    background: none;
+    font-weight: bold;
+    margin-right: 0.5rem;
+    border: 2px solid #4aa3a4;
+    border-radius: 5px;
+    padding: 7px;
+    cursor: pointer;
+  }
+
+  .filters .active {
+    background-color: #edfdfc;
+  }
+
+  .autocomplete-container {
+    width: 400px;
+    margin: 20px 0;
+    .md-field:after {
+      height: 0;
+    }
+    .md-field {
+      margin: 0;
+      padding: 0;
+      &.md-theme-default:before {
+        background-color: transparent;
+      }
+      .md-input-action {
+        right: 41px;
+      }
+    }
+    .md-menu {
+      padding: 5px;
+      border-color: #cccccc;
+      border-style: solid;
+      border-width: 1px 0 1px 1px;
+      border-radius: 5px 0 0 5px;
+      align-items: center;
+
+      .md-input {
+        color: #757575;
+        font-weight: bold;
+      }
+    }
+    .magnifying-glass-container {
+      color: white;
+      width: 46px;
+      background-color: #028081;
+      font-size: 18px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border: 1px solid #028081;
+      border-radius: 0 5px 5px 0;
+    }
+  }
+
+  .activities-group {
+    text-align: left;
+    .month {
+      position: relative;
+      display: inline-block;
+      width: 120px;
+      text-align: center;
+      padding: 5px;
+      background-color: #fcf8e5;
+      border-radius: 20px;
+    }
+    .activities-list {
+      list-style-type: none;
+      padding: 0;
+      .activity-item {
+        position: relative;
+      }
+    }
+  }
+  .load-more-button {
+    color: #028083;
+    font-weight: bold;
+    border: none;
+    background: none;
+    cursor: pointer;
+  }
 }
 
 .md-menu-content {
-  max-width: 300px !important;
-}
-
-.month {
-  position: relative;
-  display: inline-block;
-  padding: 5px;
-  background-color: #fcf8e5;
-  border-radius: 10px;
-}
-
-.vertical-line {
-  position: absolute;
-  left: 50%;
-  top: 100%;
-  -webkit-transform: translateX(-50%);
-  transform: translateX(-50%);
-  height: 14px;
-  width: 1px;
-  background-color: #000;
+  width: 400px !important;
+  max-width: unset !important;
 }
 </style>
